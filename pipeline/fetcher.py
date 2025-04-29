@@ -1,5 +1,6 @@
 import json
 
+
 class BibleFetcher:
     def __init__(self, translation: str = "NKJV"):
         json_path = translation.lower() + '.json'

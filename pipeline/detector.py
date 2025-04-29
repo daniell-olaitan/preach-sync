@@ -3,17 +3,16 @@ import logging
 
 from mistralai import Mistral
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.CRITICAL)
 
 PROMPT = """Extract structured data from the following user input:
 
 {data}
 
 Extraction Instructions:
-Identify the most probable Bible reference or quoted scripture in the input text (from transcriptions, which may contain errors or variations). This could be:
+Identify the most probable Bible verse reference in the input text (from transcriptions, which may contain errors or variations). This could be:
 - A bible verse reference (e.g. "first of Corinthians chapter ninety two verse fifty", "Mathew chapter ninety verse five hundred", "John ninety seventy", etc.)
 - Ranges of verses indicated by hyphens or "to" (e.g., "first of Corinthians chapter ninety two verse fifty to seventy").
-- A paraphrased or quoted scripture (e.g., "For God so loved the world...")
 
 Additional Instructions:
 - Prioritize accuracy over recall (avoid false positives).
@@ -32,15 +31,12 @@ Output Format Example:
 }}
 
 Other Examples:
-Input: "For God so loved the world..."
+Input: "Open Mathew seven verse seven"
 Output: {{
-  "book": "John",
-  "chapter": "3",
-  "verse": "16"
+  "book": "Mathew",
+  "chapter": "7",
+  "verse": "7"
 }}
-
-Input: “Mathew was given the book at 3:16am”
-Output: {{}}
 
 Input: "Nothing scriptural here"
 Output: {{}}
@@ -49,12 +45,13 @@ Ensure the extracted data adheres to the specified structure and accurately repr
 Return your response in JSON format.
 """
 
+
 class DetectorAI:
     def __init__(self, *, model: str, api_key: str):
         self._model = model
         self._client = Mistral(api_key=api_key)
 
-    async def detect_verse(self, prompt: str, data: str) -> dict:
+    async def detect_verse(self, data: str, prompt: str = PROMPT) -> dict:
         messages = [
             {
                 'role': 'user',
@@ -128,7 +125,7 @@ if __name__ == '__main__':
     async def main():
         for data in test_data:
             print(data)
-            content = await detector.detect_verse(PROMPT, data)
+            content = await detector.detect_verse(data)
             scripture = fetcher.fetch_verse(**content)
             print(scripture)
 
