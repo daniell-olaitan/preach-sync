@@ -56,16 +56,6 @@ This project provides a complete pipeline for detecting and fetching Bible verse
 
 ---
 
-### 🧪 Run Demo (Verse Detection Only)
-
-```bash
-python detector.py
-```
-
-This will run predefined test inputs through the Mistral-based verse detector and print the verse if found.
-
----
-
 ### ✅ Example Output
 
 **Input (transcript):**
