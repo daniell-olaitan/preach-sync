@@ -1,3 +1,4 @@
+import { AsyncQueue } from '../utils.js';
 import { MicStream } from '../pipeline.js';
 
 import htm from 'https://esm.sh/htm';
@@ -13,16 +14,24 @@ function Home() {
     'Psalm 23:1',
     'Romans 8:28'
   ]);
+
   const [selectedVerse, setSelectedVerse] = useState('');
   const [verseContent, setVerseContent] = useState('');
-  let mic;
+  const micRef = useRef(null);
+  const textSocketRef = useRef(null);
 
-  const startMic = () => {
-    mic = new MicStream("ws://localhost:8000/ws/audio");
-    mic.init();
+  const startMic = async () => {
+    const sId = crypto.randomUUID();
+    const audioQueue = new AsyncQueue();
 
-    const socket = new WebSocket("ws://localhost:8000/ws/audio");
-    socket.onmessage = (event) => {
+    const base = 'ws://localhost:8000/ws';
+    const mic = new MicStream(`${base}/audio/${sId}`);
+    const textSocket = new WebSocket(`${base}/text/${sId}`);
+
+    micRef.current = mic;
+    textSocketRef.current = textSocket;
+
+    textSocket.onmessage = (event) => {
       const newText = event.data;
       setText(prev => prev + '\n' + newText);
 
@@ -32,10 +41,28 @@ function Home() {
         setVerses(prev => [...new Set([...prev, 'John 3:16'])]);
       }
     };
+
+    await mic.init(audioQueue);
+
+    const sendLoop = async () => {
+      while (true) {
+        if (mic.ws.readyState === WebSocket.OPEN) {
+          const audioData = await audioQueue.get();
+
+          console.log(audioData);
+          mic.ws.send(audioData);
+        }
+
+        await new Promise(r => setTimeout(r, 1));
+      }
+    }
+
+    sendLoop();
   };
 
   const stopMic = () => {
-    if (mic) mic.stop();
+    if (micRef.current) micRef.current.stop();
+    if (textSocketRef.current) textSocketRef.current.close();
   };
 
   const handleVerseClick = (verse) => {
